@@ -1,0 +1,1 @@
+# Arquivo vazio para tornar TS um pacote Python
