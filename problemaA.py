@@ -1,66 +1,80 @@
 import numpy as np
 from TS.TS import TS
 
-artistas = ["Taylor Swift", "Beyoncé", "Tardezinha c/ Thiaguinho", "Jorge & Mateus",
-           "Anitta", "Luísa Sonza", "Billie Eilish", "Avenged Sevenfold",
-           "Nando Reis", "Gilberto Gil", "Zeca Pagodinho", "Joelma",
-           "Numanice (Ludmila)", "Adele", "Paramore", "The Weeknd"]
+# Lista de artistas e seus dados
+artistas = [
+    "Taylor Swift", "Beyoncé", "Tardezinha c/ Thiaguinho", "Jorge & Mateus",
+    "Anitta", "Luísa Sonza", "Billie Eilish", "Avenged Sevenfold",
+    "Nando Reis", "Gilberto Gil", "Zeca Pagodinho", "Joelma",
+    "Numanice (Ludmila)", "Adele", "Paramore", "The Weeknd"
+]
 
 precos = [1200, 1100, 300, 250, 350, 280, 800, 700, 200, 220, 240, 180, 200, 1000, 900, 950]
 valores = [9.5, 9.5, 7.0, 6.0, 6.0, 6.5, 7.5, 6.5, 7.5, 7.5, 7.0, 5.5, 5.0, 8.0, 6.5, 8.5]
 
-def funcaoObjetivo(x):
-    xBin = np.round(x).astype(int)
-    xBin = np.clip(xBin, 0, 1)
-    custo = np.sum(xBin * precos)
+# Função objetivo (sem restrição)
+def objetivo_basico(x):
+    x_bin = np.round(x).astype(int)
+    x_bin = np.clip(x_bin, 0, 1)
+    
+    custo = np.sum(x_bin * precos)
     if custo > 3000:
-        return 1000 + (custo - 3000)
-    numShows = np.sum(xBin)
-    valorGosto = np.sum(xBin * valores)
-    return -(numShows * 100 + valorGosto)
+        return 10000 + (custo - 3000)  # penalização alta se passar do limite
+    
+    qtd = np.sum(x_bin)
+    gosto = np.sum(x_bin * valores)
+    return -(qtd * 100 + gosto)
 
-def funcaoComRestricao(x):
-    xBin = np.round(x).astype(int)
-    xBin = np.clip(xBin, 0, 1)
-    if xBin[0] == 0 and xBin[1] == 0:
-        return 2000
-    custo = np.sum(xBin * precos)
+# Função com restrição (precisa Taylor ou Beyoncé)
+def objetivo_com_restricao(x):
+    x_bin = np.round(x).astype(int)
+    x_bin = np.clip(x_bin, 0, 1)
+    
+    # Se não tiver Taylor (0) nem Beyoncé (1), punição forte
+    if x_bin[0] == 0 and x_bin[1] == 0:
+        return 99999
+
+    custo = np.sum(x_bin * precos)
     if custo > 3000:
-        return 1000 + (custo - 3000)
-    numShows = np.sum(xBin)
-    valorGosto = np.sum(xBin * valores)
-    return -(numShows * 100 + valorGosto)
+        return 99999
+    
+    qtd = np.sum(x_bin)
+    gosto = np.sum(x_bin * valores)
+    return -(qtd * 100 + gosto)
 
+# Limites (cada artista pode ser 0 ou 1)
 bounds = [(0, 1) for _ in range(16)]
-pInit = np.random.uniform(0, 1, 16)
-resultado1 = TS(funcaoObjetivo, 100, 20, bounds, 0.3, 10, 0.8, 15, [0.1]*16, pInit, False)
 
-xOtimo1 = np.round(resultado1.x).astype(int)
-xOtimo1 = np.clip(xOtimo1, 0, 1)
-shows1 = [artistas[i] for i in range(16) if xOtimo1[i] == 1]
-custo1 = sum(precos[i] for i in range(16) if xOtimo1[i] == 1)
-gosto1 = sum(valores[i] for i in range(16) if xOtimo1[i] == 1)
+# Rodando o primeiro caso (sem restrição)
+p_ini = np.random.uniform(0, 1, 16)
+res1 = TS(objetivo_basico, 100, 20, bounds, 0.3, 10, 0.8, 15, [0.1]*16, p_ini, False)
 
-print("PROBLEMA ORIGINAL:")
-print(f"Shows: {len(shows1)} | Custo: R$ {custo1} | Gosto: {gosto1:.1f}")
-print(f"Selecionados: {', '.join(shows1)}")
+x1 = np.round(res1.x).astype(int)
+x1 = np.clip(x1, 0, 1)
+
+shows1 = [artistas[i] for i in range(16) if x1[i] == 1]
+custo1 = sum(precos[i] for i in range(16) if x1[i])
+gosto1 = sum(valores[i] for i in range(16) if x1[i])
+
+print("==== SEM RESTRIÇÃO ====")
+print(f"Total de shows: {len(shows1)} | Custo: R$ {custo1} | Gosto total: {gosto1:.1f}")
+print("Escolhidos:", ", ".join(shows1))
 print()
 
-pInit2 = np.random.uniform(0, 1, 16)
-pInit2[0] = 1
-resultado2 = TS(funcaoComRestricao, 100, 20, bounds, 0.3, 10, 0.8, 15, [0.1]*16, pInit2, False)
+#com restrição
+p_ini2 = np.random.uniform(0, 1, 16)
+p_ini2[0] = 1  # começa com Taylor escolhida
+res2 = TS(objetivo_com_restricao, 100, 20, bounds, 0.3, 10, 0.8, 15, [0.1]*16, p_ini2, False)
 
-xOtimo2 = np.round(resultado2.x).astype(int)
-xOtimo2 = np.clip(xOtimo2, 0, 1)
-shows2 = [artistas[i] for i in range(16) if xOtimo2[i] == 1]
-custo2 = sum(precos[i] for i in range(16) if xOtimo2[i] == 1)
-gosto2 = sum(valores[i] for i in range(16) if xOtimo2[i] == 1)
+x2 = np.round(res2.x).astype(int)
+x2 = np.clip(x2, 0, 1)
 
-print("COM RESTRIÇÃO (Taylor Swift OU Beyoncé):")
-print(f"Shows: {len(shows2)} | Custo: R$ {custo2} | Gosto: {gosto2:.1f}")
-print(f"Selecionados: {', '.join(shows2)}")
+shows2 = [artistas[i] for i in range(16) if x2[i] == 1]
+custo2 = sum(precos[i] for i in range(16) if x2[i])
+gosto2 = sum(valores[i] for i in range(16) if x2[i])
+
+print("==== COM RESTRIÇÃO (Taylor OU Beyoncé) ====")
+print(f"Total de shows: {len(shows2)} | Custo: R$ {custo2} | Gosto total: {gosto2:.1f}")
+print("Escolhidos:", ", ".join(shows2))
 print()
 
-print(f"Diferença de shows: {len(shows2) - len(shows1)}")
-print(f"Diferença de custo: R$ {custo2 - custo1}")
-print(f"Diferença de gosto: {gosto2 - gosto1:.1f}")
