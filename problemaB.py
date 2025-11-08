@@ -1,6 +1,5 @@
 import numpy as np
 from TS.TS import TS
-
 artistas = [
     "Taylor Swift", "Beyoncé", "Tardezinha c/ Thiaguinho", "Jorge & Mateus",
     "Anitta", "Luísa Sonza", "Billie Eilish", "Avenged Sevenfold",

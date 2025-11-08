@@ -19,7 +19,7 @@ def objetivo_basico(x):
     
     custo = np.sum(x_bin * precos)
     if custo > 3000:
-        return 10000 + (custo - 3000)  # penalização alta se passar do limite
+        return 10000 + (custo - 3000)  
     
     qtd = np.sum(x_bin)
     gosto = np.sum(x_bin * valores)
